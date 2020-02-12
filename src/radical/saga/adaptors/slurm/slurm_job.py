@@ -392,8 +392,9 @@ class SLURMJobService (cpi_job.Service) :
                     '| xargs echo'
         _, out, _ = self.shell.run_sync(ppn_cmd)
         ppn_vals  = [o.strip() for o in out.split() if o.strip()]
-        if len(ppn_vals) >= 1: self._ppn = int(ppn_vals[0])
-        else                 : self._ppn = None
+        self._ppn = 56
+#        if len(ppn_vals) >= 1: self._ppn = int(ppn_vals[0])
+#        else                 : self._ppn = None
 
         self._logger.info(" === ppn: %s", self._ppn)
 
@@ -485,11 +486,13 @@ class SLURMJobService (cpi_job.Service) :
             mpi_cmd = ''
 
             if  'stampede2' in self.rm.host.lower() or \
-                'frontera'  in self.rm.host.lower():
+                'frontera'  in self.rm.host.lower() or \
+                'localhost' in self.rm.host.lower():
 
                 assert(self._ppn), 'need unique number of cores per node'
                 number_of_nodes = int(math.ceil(float(total_cpu_count) / self._ppn))
                 slurm_script += "#SBATCH -N %d\n" % (number_of_nodes)
+                slurm_script += "#SBATCH -n %d\n" % (number_of_processes)
 
             elif self._version in ['17.11.5', '18.08.0', '18.08.3']:
 
@@ -552,7 +555,8 @@ class SLURMJobService (cpi_job.Service) :
 
         if cwd:
             if 'frontera' in self.rm.host.lower() or \
-               'tiger'    in self.rm.host.lower():
+               'tiger'    in self.rm.host.lower() or \
+               'localhost' in self.rm.host.lower():
                 slurm_script += "#SBATCH --chdir %s\n"   % cwd
             else:
                 slurm_script += "#SBATCH --workdir %s\n" % cwd
